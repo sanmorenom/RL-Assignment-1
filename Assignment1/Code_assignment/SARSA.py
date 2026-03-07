@@ -16,7 +16,8 @@ class SarsaAgent(BaseAgent):
     def update(self,s,a,r,s_next,a_next,done):
         if not done:
             self.Q_sa[s,a] = self.Q_sa[s,a] + self.learning_rate*(r + self.gamma*self.Q_sa[s_next,a_next] - self.Q_sa[s,a] )       
-
+        else:
+             self.Q_sa[s,a] = self.Q_sa[s,a] + self.learning_rate*(r - self.Q_sa[s,a] )    
         
 def sarsa(n_timesteps, learning_rate, gamma, policy='egreedy', epsilon=None, temp=None, plot=True, eval_interval=500):
     ''' runs a single repetition of SARSA
