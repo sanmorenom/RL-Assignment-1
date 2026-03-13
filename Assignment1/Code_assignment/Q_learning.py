@@ -15,6 +15,8 @@ class QLearningAgent(BaseAgent):
     def update(self,s,a,r,s_next,done):
        if not done:
             self.Q_sa[s,a] = self.Q_sa[s,a] + self.learning_rate*(r + self.gamma*max(self.Q_sa[s_next]) - self.Q_sa[s,a] )    
+       else:
+            self.Q_sa[s,a] = self.Q_sa[s,a] + self.learning_rate*(r - self.Q_sa[s,a] )    
 
 def q_learning(n_timesteps, learning_rate, gamma, policy='egreedy', epsilon=None, temp=None, plot=True, eval_interval=500):
     ''' runs a single repetition of q_learning
@@ -52,20 +54,20 @@ def q_learning(n_timesteps, learning_rate, gamma, policy='egreedy', epsilon=None
 
 def test():
     
-    n_timesteps = 1000
+    n_timesteps = 10000
     eval_interval=100
     gamma = 1.0
     learning_rate = 0.1
 
     # Exploration
-    policy = 'softmax' # 'egreedy' or 'softmax' 
-    epsilon = 0.1
+    policy = 'egreedy' # 'egreedy' or 'softmax' 
+    epsilon = 0.03
     temp = 1.0
     
     # Plotting parameters
     plot = True
 
     eval_returns, eval_timesteps = q_learning(n_timesteps, learning_rate, gamma, policy, epsilon, temp, plot, eval_interval)
-
+    print(eval_returns, eval_timesteps)
 if __name__ == '__main__':
     test()
