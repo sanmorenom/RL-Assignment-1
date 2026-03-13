@@ -40,6 +40,35 @@ def average_over_repetitions(backup, n_repetitions, n_timesteps, max_episode_len
         learning_curve = smooth(learning_curve,smoothing_window) # additional smoothing
     return learning_curve, timesteps  
 
+def average_over_repetitions_err(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, gamma, policy='egreedy', 
+                    epsilon=None, temp=None, smoothing_window=None, plot=False, n=5, eval_interval=500):
+
+    returns_over_repetitions = []
+    now = time.time()
+    
+    for rep in range(n_repetitions): # Loop over repetitions
+        if backup == 'q':
+            returns, timesteps = q_learning(n_timesteps, learning_rate, gamma, policy, epsilon, temp, plot, eval_interval)
+        elif backup == 'sarsa':
+            returns, timesteps = sarsa(n_timesteps, learning_rate, gamma, policy, epsilon, temp, plot, eval_interval)
+        elif backup == 'nstep':
+            returns, timesteps = n_step_Q(n_timesteps, max_episode_length, learning_rate, gamma, 
+                   policy, epsilon, temp, plot, n, eval_interval)
+        elif backup == 'mc':
+            returns, timesteps = monte_carlo(n_timesteps, max_episode_length, learning_rate, gamma, 
+                   policy, epsilon, temp, plot, eval_interval)
+            
+        returns_over_repetitions.append(returns)
+    print('Running one setting takes {} minutes'.format((time.time()-now)/60))
+    learning_curve = np.mean(np.array(returns_over_repetitions),axis=0) # average over repetitions  
+    
+    err_curve = np.std(returns_over_repetitions, axis=0)/np.sqrt(n_repetitions)
+
+    if smoothing_window is not None:
+        learning_curve = smooth(learning_curve, smoothing_window)
+        err_curve = smooth(err_curve, smoothing_window)
+
+    return learning_curve, timesteps, err_curve
 def experiment():
     ####### Settings
     # Experiment      
@@ -52,6 +81,7 @@ def experiment():
     eval_interval = 1000
     max_episode_length = 100
     gamma = 1.0
+    #gamma = 0.99
     
     # Parameters we will vary in the experiments, set them to some initial values: 
     # Exploration
@@ -73,7 +103,7 @@ def experiment():
     
     #### Assignment 1: Dynamic Programming
     # Execute this assignment in DynamicProgramming.py
-    optimal_episode_return = 93 # set the optimal return per episode you found in the DP assignment here
+    optimal_episode_return = 84 # set the optimal return per episode you found in the DP assignment here
     
     #### Assignment 2: Effect of exploration
     policy = 'egreedy'
@@ -83,15 +113,15 @@ def experiment():
     Plot = LearningCurvePlot(title = 'Exploration: $\epsilon$-greedy versus softmax exploration')    
     Plot.set_ylim(-100, 100) 
     for epsilon in epsilons:        
-        learning_curve, timesteps = average_over_repetitions(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
+        learning_curve, timesteps, err_curve = average_over_repetitions_err(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
                                               gamma, policy, epsilon, temp, smoothing_window, plot, n, eval_interval)
-        Plot.add_curve(timesteps,learning_curve,label=r'$\epsilon$-greedy, $\epsilon $ = {}'.format(epsilon))    
+        Plot.add_curve_err(timesteps,learning_curve,err_curve,label=r'$\epsilon$-greedy, $\epsilon $ = {}'.format(epsilon))    
     policy = 'softmax'
-    temps = [0.01,0.1,1.0]
+    temps = [0.01,0.1,1]
     for temp in temps:
-        learning_curve, timesteps = average_over_repetitions(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
+        learning_curve, timesteps, err_curve = average_over_repetitions_err(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
                                               gamma, policy, epsilon, temp, smoothing_window, plot, n, eval_interval)
-        Plot.add_curve(timesteps,learning_curve,label=r'softmax, $ \tau $ = {}'.format(temp))
+        Plot.add_curve_err(timesteps,learning_curve,err_curve,label=r'softmax, $ \tau $ = {}'.format(temp))
     Plot.add_hline(optimal_episode_return, label="DP optimum")
     Plot.save('C:/Users/Asus/Documents/Assignment1/Assignment1/Code_assignment/exploration.png')
         
@@ -104,9 +134,9 @@ def experiment():
     Plot.set_ylim(-100, 100) 
     for backup in backups:
         for learning_rate in learning_rates:
-            learning_curve, timesteps = average_over_repetitions(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
+            learning_curve, timesteps, err_curve = average_over_repetitions_err(backup, n_repetitions, n_timesteps, max_episode_length, learning_rate, 
                                               gamma, policy, epsilon, temp, smoothing_window, plot, n, eval_interval)
-            Plot.add_curve(timesteps,learning_curve,label=r'{}, $\alpha$ = {} '.format(backup_labels[backup],learning_rate))
+            Plot.add_curve_err(timesteps,learning_curve,err_curve,label=r'{}, $\alpha$ = {} '.format(backup_labels[backup],learning_rate))
     Plot.add_hline(optimal_episode_return, label="DP optimum")
     Plot.save('C:/Users/Asus/Documents/Assignment1/Assignment1/Code_assignment/on_off_policy.png')
     

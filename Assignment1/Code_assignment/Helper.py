@@ -28,6 +28,14 @@ class LearningCurvePlot:
         else:
             self.ax.plot(x,y)
     
+    def add_curve_err(self, x, y, err, label=None, alpha=0.2):
+        if label is not None:
+            self.ax.plot(x,y,label=label)
+            self.ax.fill_between(x,y-err, y+err, alpha=alpha)
+        else:
+            self.ax.plot(x, y)
+            self.ax.fill_between(x,y-err,y+err,alpha=alpha)
+    
     def set_ylim(self,lower,upper):
         self.ax.set_ylim([lower,upper])
 
