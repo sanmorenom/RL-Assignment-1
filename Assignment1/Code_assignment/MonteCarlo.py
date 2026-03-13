@@ -17,15 +17,13 @@ class MonteCarloAgent(BaseAgent):
         actions is a list of actions observed in the episode, of length T_ep
         rewards is a list of rewards observed in the episode, of length T_ep
         done indicates whether the final s in states is was a terminal state '''
-        G = 0
-        for i in range(len(states)-2,-1,-1):
-            s = states[i]
-            a = actions[i]
-            r = rewards[i]
-            G = r + self.gamma*G #ommitting gamma in implementation
+        # TO DO: Add own code
+        Gt = 0
+        for i in range(len(rewards)-1, -1, -1):
+            Gt = rewards[i] + self.gamma * Gt
             
-            self.Q_sa[s,a] = self.Q_sa[s,a] + self.learning_rate*(G - self.Q_sa[s,a])
-            
+            Q_new = self.Q_sa[states[i], actions[i]] + self.learning_rate*(Gt - self.Q_sa[states[i], actions[i]])
+            self.Q_sa[states[i], actions[i]] = Q_new
 
 def monte_carlo(n_timesteps, max_episode_length, learning_rate, gamma, 
                    policy='egreedy', epsilon=None, temp=None, plot=True, eval_interval=500):
@@ -38,30 +36,40 @@ def monte_carlo(n_timesteps, max_episode_length, learning_rate, gamma,
     eval_timesteps = []
     eval_returns = []
 
-    pi.evaluate(eval_env)
-    count = 0
-    while count < n_timesteps:
-        s = [env.reset()] 
-        a = []
-        r = []
-        t = 0 
-        while t<max_episode_length:
-            at = pi.select_action(s=s[t],policy=policy,epsilon=epsilon,temp=temp)
-            a.append(at)
-            s_next, r_next, terminal = env.step(at)
-            s.append(s_next)
-            r.append(r_next)
-            if terminal:break
-            t+=1
-        pi.update(s,a,r)
-        if count%eval_interval == 0:
-                eval_timesteps.append(count)
-                eval_returns.append(pi.evaluate(eval_env))
-        # if plot:
-        #     env.render(Q_sa=pi.Q_sa,plot_optimal_policy=True,step_pause=0.1)
-        count += 1
+    # TO DO: Write your Monte Carlo RL algorithm here!
+    
+    s = []
+    a = []
+    r = []
+    
+    count_step = 0
+    s = [env.reset()]
+    
+    for i in range(n_timesteps):
+        
+        if(i % eval_interval == 0):
+            eval_timesteps.append(i)
+            eval_returns.append(pi.evaluate(eval_env))
+        
+        action = pi.select_action(s= s[-1], policy=policy, epsilon=epsilon, temp= temp)
+        s_next, reward, done = env.step(action)    
+        
+        count_step += 1
+        
+        s.append(s_next)
+        a.append(action)
+        r.append(reward)
 
-
+            
+        if done or count_step >= max_episode_length:
+            pi.update(s, a, r)
+            s = [env.reset()]
+            a = []
+            r = []
+            count_step = 0
+            
+    eval_timesteps.append(n_timesteps)
+    eval_returns.append(pi.evaluate(eval_env))
     
     # if plot:
     #    env.render(Q_sa=pi.Q_sa,plot_optimal_policy=True,step_pause=0.1) # Plot the Q-value estimates during Monte Carlo RL execution
